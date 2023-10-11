@@ -13,8 +13,6 @@ void main() async {
   tz.initializeTimeZones();
   flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
       AndroidFlutterLocalNotificationsPlugin>()?.requestNotificationsPermission();
-  flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
-      AndroidFlutterLocalNotificationsPlugin>()?.requestExactAlarmsPermission();
   AndroidInitializationSettings androidInitializationSettings =
   const AndroidInitializationSettings("@mipmap/ic_launcher");
 
@@ -22,10 +20,15 @@ void main() async {
 
   InitializationSettings initializationSettings = InitializationSettings(
     android: androidInitializationSettings,
-    iOS: iosInitializationSettings
+    iOS: iosInitializationSettings,
   );
 
-  bool? notification = await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+  bool? notification = await flutterLocalNotificationsPlugin.initialize(
+      initializationSettings,
+    onDidReceiveNotificationResponse: (response){
+        log("Background : ${response.payload.toString()}");
+    }
+  );
 
   log("Notification : $notification");
 
@@ -80,9 +83,12 @@ class _MyHomePageState extends State<MyHomePage> {
         iOS: darwinNotificationDetails
     );
 
-    await flutterLocalNotificationsPlugin.show(0, 'First', "The boday", notificationDetails).then((value) {
-      print("Its working man");
-    });
+    await flutterLocalNotificationsPlugin.show(
+        0, 'First', "The boday",
+        notificationDetails,
+      payload: "Jai Shree Ram"
+    );
+
 
     //var schedule = DateTime.now().add(Duration(seconds: 3));
 
@@ -102,8 +108,28 @@ class _MyHomePageState extends State<MyHomePage> {
     }*/
 
   }
+
+  void checkForNotification() async{
+    NotificationAppLaunchDetails? details =
+    await flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
+    if(details!=null){
+      NotificationResponse? response = details.notificationResponse;
+      if(response!=null){
+        String? payload = response.payload;
+        log("Notification Payload : $payload");
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+
+
+    @override
+    void initState() {
+      checkForNotification();
+      super.initState();
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -122,4 +148,6 @@ class _MyHomePageState extends State<MyHomePage> {
       ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
+
+
 }
